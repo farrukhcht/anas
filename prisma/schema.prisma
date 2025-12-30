@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  USER
+}
+
+model User {
+  id          Int              @id @default(autoincrement())
+  name        String
+  phoneNumber String           @unique
+  password    String
+  role        UserRole         @default(USER)
+  status      String           @default("ACTIVE") // ACTIVE or INACTIVE
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   Int?             // ID of the user who created this user
+  permissions UserPermission[]
+  accounts    Account[]
+  sessions    Session[]
+  activities  UserActivity[]
+}
+
+model UserPermission {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  module    String
+  action    String
+  isGranted Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, module, action])
+}
+
+// NextAuth.js Models
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model UserActivity {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
+  details   String? // Additional details about the activity
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Department {
+  DepID   Int      @id @default(autoincrement())
+  DepName String
+  DepDes  String?
+  Employee Employee[]
+}
+
+model Employee {
+  EmpID          Int       @id @default(autoincrement())
+  EmpName        String
+  EmpEmail       String    @unique
+  EmpJoiningDate DateTime
+  EmpDepID       Int
+  Department     Department @relation(fields: [EmpDepID], references: [DepID])
+}
+
