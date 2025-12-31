@@ -90,7 +90,6 @@
 //     return new NextResponse('Internal Server Error', { status: 500 });
 //   }
 // } 
-
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
@@ -98,7 +97,7 @@ import { authOptions } from "@/app/api/auth/authOptions";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -106,7 +105,7 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const id = context.params.id;
+    const { id } = await params;
 
     const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") ?? "1");
@@ -118,7 +117,6 @@ export async function GET(
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: any = {
       userId: Number(id),
     };
@@ -143,9 +141,7 @@ export async function GET(
         where.createdAt.gte = start;
         where.createdAt.lte = end;
       } else {
-        if (startDate) {
-          where.createdAt.gte = new Date(startDate);
-        }
+        if (startDate) where.createdAt.gte = new Date(startDate);
         if (endDate) {
           const end = new Date(endDate);
           end.setHours(23, 59, 59, 999);
