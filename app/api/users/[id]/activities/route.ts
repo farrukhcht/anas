@@ -90,6 +90,7 @@
 //     return new NextResponse('Internal Server Error', { status: 500 });
 //   }
 // } 
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
@@ -97,7 +98,7 @@ import { authOptions } from "@/app/api/auth/authOptions";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -105,7 +106,7 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = context.params;
 
     const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") ?? "1");
